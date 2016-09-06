@@ -7,15 +7,15 @@ from math import sin
 from math import pi
 
 class Spaceship():
-    def __init__(self, window, image):
+    def __init__(self, window, image, rotation):
         self.window = window
         self.x_speed = 0
         self.y_speed = 0
         # Sets an image's anchor point to its center
         image.anchor_x, image.anchor_y = image.width/2, image.height/2
         x, y = self.window.width/2, self.window.height/2
-        self.sprite = pyglet.sprite.Sprite(image, x, y)
-        self.sprite.rotation = 0
+        self.sprite = pyglet.sprite.Sprite(image, x, y, batch=batch)
+        self.sprite.rotation = rotation
     
     def out_of_window(self):
         # when image moves out of window (pbc)
@@ -25,21 +25,25 @@ class Spaceship():
     
     def tick(self, t):
         acceleration = 0
+        speed = pow(self.x_speed**2 + self.y_speed**2, 0.5)
         if 'SPEED_UP' in pressed_keys:
-            acceleration = 1
+            acceleration = 0.1
         elif 'SLOW_DOWN' in pressed_keys:
             acceleration = -1
         elif 'RIGHT' in pressed_keys:
             self.sprite.rotation += 2
         elif 'LEFT' in pressed_keys:
             self.sprite.rotation -= 2
+        # new angle in radians, counterclockwise motion
         angle = - (self.sprite.rotation*pi/180 - pi/2)
+        # rotation of velocity
+        self.x_speed = speed*cos(angle)
+        self.y_speed = speed*sin(angle)
+        # acceleration
         self.x_speed += acceleration * cos(angle)
         self.y_speed += acceleration * sin(angle)
         self.sprite.x += self.x_speed
         self.sprite.y += self.y_speed
-        #self.sprite.x += self.x_speed 
-        #self.sprite.y += self.y_speed
         # when image moves out of window (pbc)
         self.sprite.x, self.sprite.y = self.out_of_window()
         
@@ -54,15 +58,21 @@ window.push_handlers(keys)
 pressed_keys = set()
 
 # Create a ship    
-ship_image = pyglet.image.load('playerShip1_blue.png')   
-Ship = Spaceship(window, ship_image)
+ship_image = pyglet.image.load('playerShip1_blue.png')
+batch = pyglet.graphics.Batch()
+Ship1 = Spaceship(window, ship_image, 0)
+Ship2 = Spaceship(window, ship_image, 90)
 
-pyglet.clock.schedule_interval(Ship.tick, 1./60)
+spaceships = [Ship1, Ship2]
+
+for Ship in spaceships:
+    pyglet.clock.schedule_interval(Ship.tick, 1./60)
 
 @window.event
 def on_draw():
     Ship.window.clear()
-    Ship.sprite.draw()
+    batch.draw()
+    #Ship.sprite.draw()
     
 @window.event
 def on_key_press(symbol, modifiers):
