@@ -13,6 +13,8 @@ class SpaceObject(object):
         # Sets an image's anchor point to its center
         image.anchor_x, image.anchor_y = image.width/2, image.height/2
         self.window = window
+        self.x_speed = 0
+        self.y_speed = 0
         
     def out_of_window(self):
         # when image moves out of window (pbc)
@@ -28,8 +30,6 @@ class Spaceship(SpaceObject):
         y = self.window.height/2
         self.sprite = pyglet.sprite.Sprite(image, x, y, batch=batch)
         self.sprite.rotation = 0
-        self.x_speed = 0
-        self.y_speed = 0
         
     def tick(self, t):
         acceleration = 0
@@ -89,11 +89,15 @@ batch = pyglet.graphics.Batch()
 ship_image = pyglet.image.load('PNG/playerShip1_blue.png')
 Ship = Spaceship(window, ship_image)
 
-# Create an Asteroid
-asteroid_image = pyglet.image.load('PNG/meteorBrown_big1.png')
-asteroid1 = Asteroid(window, asteroid_image)
+# Create Asteroids
+meteors = ['PNG/meteorBrown_big1.png', 'PNG/meteorBrown_med1.png', 
+           'PNG/meteorBrown_small1.png', 'PNG/meteorBrown_tiny1.png']
+asteroid_images = [pyglet.image.load(png) for png in meteors]
+asteroids = []
+for asteroid_image in asteroid_images:
+    asteroids.append(Asteroid(window, asteroid_image))
 
-space_object = [Ship, asteroid1]
+space_object = [Ship] + asteroids
 
 for obj in space_object:
     pyglet.clock.schedule_interval(obj.tick, 1./60)
