@@ -90,12 +90,13 @@ ship_image = pyglet.image.load('PNG/playerShip1_blue.png')
 Ship = Spaceship(window, ship_image)
 
 # Create Asteroids
+number_of_asteroids = 5
 meteors = ['PNG/meteorBrown_big1.png', 'PNG/meteorBrown_med1.png', 
            'PNG/meteorBrown_small1.png', 'PNG/meteorBrown_tiny1.png']
 asteroid_images = [pyglet.image.load(png) for png in meteors]
 asteroids = []
-for asteroid_image in asteroid_images:
-    asteroids.append(Asteroid(window, asteroid_image))
+for i in range(number_of_asteroids):
+    asteroids.append(Asteroid(window, random.choice(asteroid_images)))
 
 space_object = [Ship] + asteroids
 
