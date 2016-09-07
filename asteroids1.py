@@ -35,9 +35,9 @@ class Spaceship(SpaceObject):
         acceleration = 0
         speed = pow(self.x_speed**2 + self.y_speed**2, 0.5)
         if 'SPEED_UP' in pressed_keys:
-            acceleration = 0.1
+            acceleration = 0.05
         elif 'SLOW_DOWN' in pressed_keys:
-            acceleration = -1
+            acceleration = -0.05
         elif 'RIGHT' in pressed_keys:
             self.sprite.rotation += 2
         elif 'LEFT' in pressed_keys:
@@ -57,16 +57,20 @@ class Spaceship(SpaceObject):
 
 
 class Asteroid(SpaceObject):
-    def __init__(self, window, image):
+    def __init__(self, window, asteroid_images):
+        # random image of Asteroid
+        image = random.choice(asteroid_images)
         super(Asteroid, self).__init__(window, image)
-        x = 0
-        y = random.uniform(0, self.window.height)
-        self.sprite = pyglet.sprite.Sprite(image, x, y, batch=batch)
+        # random initial position of Asteroid at the edge
+        position = [0, 0]
+        window.dimension = [self.window.width, self.window.height]
+        axis = random.choice([0, 1])
+        position[axis] = random.uniform(0, window.dimension[axis])
+        self.sprite = pyglet.sprite.Sprite(image, position[0], position[1], batch=batch)
         self.sprite.rotation = 0
-        # alebo to urobit ze celkova rychlost v nejakom rozmedzi a potom 
-        # vx (a vy) uz nahodne
-        self.x_speed = random.uniform(-1,1)
-        self.y_speed = random.uniform(-1,1)
+        # random initial velocity
+        self.x_speed = random.uniform(-0.5, 0.5)
+        self.y_speed = random.uniform(-0.5, 0.5)
         
     def tick(self, t):
         self.sprite.x += self.x_speed
@@ -81,7 +85,10 @@ window = pyglet.window.Window(resizable=True)
 key = pyglet.window.key
 keys = key.KeyStateHandler()
 window.push_handlers(keys)
+
 pressed_keys = set()
+key_control = {key.UP: 'SPEED_UP', key.DOWN: 'SLOW_DOWN', 
+               key.RIGHT: 'RIGHT', key.LEFT: 'LEFT'}
 
 batch = pyglet.graphics.Batch()
 
@@ -96,11 +103,11 @@ meteors = ['PNG/meteorBrown_big1.png', 'PNG/meteorBrown_med1.png',
 asteroid_images = [pyglet.image.load(png) for png in meteors]
 asteroids = []
 for i in range(number_of_asteroids):
-    asteroids.append(Asteroid(window, random.choice(asteroid_images)))
+    asteroids.append(Asteroid(window, asteroid_images))
 
-space_object = [Ship] + asteroids
+object = [Ship] + asteroids
 
-for obj in space_object:
+for obj in object:
     pyglet.clock.schedule_interval(obj.tick, 1./60)
 
 @window.event
@@ -110,24 +117,12 @@ def on_draw():
     
 @window.event
 def on_key_press(symbol, modifiers):
-    if symbol == key.UP:
-        pressed_keys.add('SPEED_UP')
-    if symbol == key.DOWN:
-        pressed_keys.add('SLOW_DOWN')
-    if symbol == key.RIGHT:
-        pressed_keys.add('RIGHT')
-    if symbol == key.LEFT:
-        pressed_keys.add('LEFT')
+    if symbol in key_control:
+        pressed_keys.add(key_control[symbol])
         
 @window.event
 def on_key_release(symbol, modifiers):
-    if symbol == key.UP:
-        pressed_keys.discard('SPEED_UP')
-    if symbol == key.DOWN:
-        pressed_keys.discard('SLOW_DOWN')
-    if symbol == key.RIGHT:
-        pressed_keys.discard('RIGHT')
-    if symbol == key.LEFT:
-        pressed_keys.discard('LEFT')
+    if symbol in key_control:
+        pressed_keys.discard(key_control[symbol])
 
 pyglet.app.run()
