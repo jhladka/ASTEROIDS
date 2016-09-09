@@ -6,7 +6,7 @@ import random
 from math import cos
 from math import sin
 from math import pi
-from pyglet.gl import *
+#from pyglet.gl import *
 
 class SpaceObject(object):
     def __init__(self, window, image):
@@ -21,38 +21,23 @@ class SpaceObject(object):
         w = self.window.width
         h = self.window.height
         return self.sprite.x % w, self.sprite.y % h  
-
-    def circle(self, Sprite):
-        x0 = Sprite.x
-        y0 = Sprite.y
-        radius = (Sprite.height + Sprite.width)/4 
-        numPoints = 200
-        coordinates = []
-        for i in xrange(numPoints):
-            angle = 2*i*pi/numPoints
-            x = x0 + radius * cos(angle) 
-            y = y0 + radius * sin(angle)
-            coordinates += [x, y]
-        return numPoints, ('v2f', coordinates)
-    """
+    
     def delete(self):
-        objects.remove(self)
-        !!! a vymazat sprite z batch
-        return objects
-    """   
+        space_object.remove(self)
+        self.sprite.delete()
+        return space_object
+     
 
 class Spaceship(SpaceObject):
     def __init__(self, window, image):
         super(Spaceship, self).__init__(window, image)
         x = self.window.width/2
         y = self.window.height/2
-        self.sprite = pyglet.sprite.Sprite(image, x, y, batch=batch)
+        self.sprite = pyglet.sprite.Sprite(image, x, y, batch=batch, group=foreground)
         self.sprite.rotation = 0
-        n, xy = self.circle(self.sprite)
-        self.Circle = batch.add(n, GL_POINTS, None, xy)
+        self.radius = (self.sprite.height + self.sprite.width)/4
         
     def tick(self, t):
-        self.Circle.delete()
         acceleration = 0
         speed = pow(self.x_speed**2 + self.y_speed**2, 0.5)
         if 'SPEED_UP' in pressed_keys:
@@ -83,12 +68,10 @@ class Spaceship(SpaceObject):
             x = abs(self.sprite.x - obj.sprite.x)
             y = abs(self.sprite.y - obj.sprite.y)
             distance = pow(min(x, w-x)**2 + min(y, h-y)**2, 0.5)
-            """
-            if distance < self.circle() + obj.circle():
+            if distance < self.radius + obj.radius:
                 obj.hit_by_spaceship(self)
-            """
-        n, xy = self.circle(self.sprite)
-        self.Circle = batch.add(n, GL_POINTS, None, xy)
+                print Ship2
+                break
         
 
 class Asteroid(SpaceObject):
@@ -101,8 +84,9 @@ class Asteroid(SpaceObject):
         window.dimension = [self.window.width, self.window.height]
         axis = random.choice([0, 1])
         position[axis] = random.uniform(0, window.dimension[axis])
-        self.sprite = pyglet.sprite.Sprite(image, position[0], position[1], batch=batch)
+        self.sprite = pyglet.sprite.Sprite(image, position[0], position[1], batch=batch, group=foreground)
         self.sprite.rotation = 0
+        self.radius = (self.sprite.height + self.sprite.width)/4
         # random initial velocity
         self.x_speed = random.uniform(-0.5, 0.5)
         self.y_speed = random.uniform(-0.5, 0.5)
@@ -114,14 +98,25 @@ class Asteroid(SpaceObject):
         self.sprite.x, self.sprite.y = self.out_of_window()
         
     def hit_by_spaceship(self, ship):
-        ship.delete()        
-    
+        print space_object
+        ship.delete()
+        print space_object
+        
+        ship2_image = pyglet.image.load('PNG/playerShip1_green.png')
+        global Ship2 
+        Ship2 = Spaceship(window, ship2_image)
+        space_object.append(Ship2)
+        print space_object
+        
     
 ### HERE BEGINS THE GAME ###
+    
 # Create a window
-window = pyglet.window.Window(resizable=True)
+    
+window = pyglet.window.Window(fullscreen=True)
 
 # Setup our keyboard handler
+
 key = pyglet.window.key
 keys = key.KeyStateHandler()
 window.push_handlers(keys)
@@ -132,11 +127,63 @@ key_control = {key.UP: 'SPEED_UP',
                key.RIGHT: 'RIGHT', 
                key.LEFT: 'LEFT'}
 
+# ordered groups
+background = pyglet.graphics.OrderedGroup(0)
+foreground = pyglet.graphics.OrderedGroup(1)
+
 batch = pyglet.graphics.Batch()
 
+# resource paths. Resources folder must be on same level as this file.
+pyglet.resource.path = ['PNG']
+pyglet.resource.reindex()
+
+# background
+bg_image = pyglet.resource.image('blue.png')
+universe = []
+W = window.width
+H = window.height
+w = bg_image.width
+h = bg_image.height
+Nw = W/w + 1
+Nh = H/h + 1
+for i in xrange(Nw):
+    for j in xrange(Nh):
+        print i,j
+        x = i*w
+        y = j*h
+        universe.append(pyglet.sprite.Sprite(img=bg_image, x=x, y=y, batch=batch, group=background))
+
+### Create Ship ###   
+
+ship_image = pyglet.resource.image('playerShip1_blue.png')
+Ship = Spaceship(window, ship_image)
+
+### Create Asteroids ###
+
+number_of_asteroids = 5
+
+meteors = ['meteorBrown_big1.png', 
+           'meteorBrown_med1.png', 
+           'meteorBrown_small1.png', 
+           'meteorBrown_tiny1.png']
+           
+asteroid_images = [pyglet.resource.image(png) for png in meteors]
+
+asteroids = []
+
+for i in range(number_of_asteroids):
+    asteroids.append(Asteroid(window, asteroid_images))
+
+### all space objects ###
+
+space_object = [Ship] + asteroids
+
+for obj in space_object:
+    pyglet.clock.schedule_interval(obj.tick, 1./60)
+    
 @window.event
 def on_draw():
-    window.clear() 
+    window.clear()
     batch.draw()
     
 @window.event
@@ -148,24 +195,5 @@ def on_key_press(symbol, modifiers):
 def on_key_release(symbol, modifiers):
     if symbol in key_control:
         pressed_keys.discard(key_control[symbol])
-
-### Create a Ship ###   
-ship_image = pyglet.image.load('PNG/playerShip1_blue.png')
-Ship = Spaceship(window, ship_image)
-
-### Create Asteroids ###
-number_of_asteroids = 5
-meteors = ['PNG/meteorBrown_big1.png', 
-           'PNG/meteorBrown_med1.png', 
-           'PNG/meteorBrown_small1.png', 
-           'PNG/meteorBrown_tiny1.png']
-asteroid_images = [pyglet.image.load(png) for png in meteors]
-asteroids = []
-for i in range(number_of_asteroids):
-    asteroids.append(Asteroid(window, asteroid_images))
-
-space_object = [Ship] + asteroids
-for obj in space_object:
-    pyglet.clock.schedule_interval(obj.tick, 1./60)
-
+        
 pyglet.app.run()
