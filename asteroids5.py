@@ -261,7 +261,7 @@ pyglet.resource.reindex()
 universe = fill_background('blue.png')
 
 ### Create Asteroids ###
-number_of_asteroids = 4
+number_of_asteroids = 3
 size = 0    # the biggest Asteroids
 meteors = [['meteorBrown_big1.png',
             'meteorBrown_big2.png',
