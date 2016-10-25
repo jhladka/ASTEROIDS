@@ -13,23 +13,23 @@ class SpaceObject(object):
         # Sets an image's anchor point to its center
         image.anchor_x, image.anchor_y = image.width/2, image.height/2
         self.window = window
-        
+
     def tick(self, dt, w, h):
         # update position of space object
         self.sprite.x += self.x_speed*dt
         self.sprite.y += self.y_speed*dt
         # if space object moves out of window (pbc)
         self.sprite.x, self.sprite.y = self.backToWindow(w, h)
-        
+
     def backToWindow(self, w, h):
         # when image moves out of window (pbc)
-        return self.sprite.x % w, self.sprite.y % h  
-    
+        return self.sprite.x % w, self.sprite.y % h
+
     def delete(self):
         # delete sprite and space object from list of space objects
         space_object.remove(self)
         self.sprite.delete()     # re­move sprite from graph­ics batch
-        
+
     def distance(self, other, W, H):
         # calculates minimal distance between two objects
         x = abs(self.sprite.x - other.sprite.x)
@@ -38,10 +38,10 @@ class SpaceObject(object):
 
     def hit_by_spaceship(self, other):
         pass
-     
+
     def hit_by_laser(self, other):
-        pass 
-    
+        pass
+
     def change_sprite(self, dt, new_img):
         x = self.sprite.x
         y = self.sprite.y
@@ -51,7 +51,7 @@ class SpaceObject(object):
         img.anchor_x, img.anchor_y = img.width/2, img.height/2
         self.sprite = pyglet.sprite.Sprite(img, x, y, batch=batch, group=foreground)
         self.sprite.rotation = rotation
-    
+
 
 class Spaceship(SpaceObject):
     def __init__(self, window, img):
@@ -66,7 +66,7 @@ class Spaceship(SpaceObject):
         self.sprite.rotation = 0
         self.radius = (self.sprite.height + self.sprite.width)/4
         self.fire = -1
-        
+
     def tick(self, dt, w, h):
         acceleration = 0
         speed = pow(self.x_speed**2 + self.y_speed**2, 0.5)
@@ -80,7 +80,7 @@ class Spaceship(SpaceObject):
             self.sprite.rotation -= 2
         if 'FIRE' in pressed_keys:
             if self.fire < 0:
-                fireLaser(self.sprite.x, self.sprite.y, 
+                fireLaser(self.sprite.x, self.sprite.y,
                           speed, self.sprite.rotation, self.radius)
                 self.fire = 0.3
         self.fire -= dt
@@ -103,7 +103,7 @@ class Spaceship(SpaceObject):
             if d < self.radius + obj.radius:
                 obj.hit_by_spaceship(self)
                 break
-        
+
 
 class Asteroid(SpaceObject):
     def __init__(self, window, asteroid_image, size, x=None, y=None, x_speed=None, y_speed=None):
@@ -127,14 +127,14 @@ class Asteroid(SpaceObject):
         # random initial velocity
         self.x_speed = x_speed
         self.y_speed = y_speed
-        
+
     def hit_by_spaceship(self, ship):
         # delete Spaceship and create new one (if ship's shield is not activ)
         if ship.has_shield < 0:
             ship.delete()
             pressed_keys.clear()
             createNewShip()
-        
+
     def hit_by_laser(self, laser):
         # delete Asteroid when it's smallest
         # or create 2 smaller
@@ -153,7 +153,7 @@ class Asteroid(SpaceObject):
                 space_object.append(Asteroid(window, img, size, x=x, y=y, x_speed=x_speed, y_speed=y_speed))
         laser.delete()
         self.delete()
-        
+
 
 class Laser(SpaceObject):
     def __init__(self, img, x, y, x_speed, y_speed, rotation):
@@ -163,7 +163,7 @@ class Laser(SpaceObject):
         self.sprite = pyglet.sprite.Sprite(img, x, y, batch=batch, group=foreground)
         self.sprite.rotation = rotation
         self.radius = (self.sprite.height + self.sprite.width)/4
-    
+
     def tick(self, dt, w, h):
         super(Laser, self).tick(dt, w, h)
         # check if there's a collision with other space object
@@ -172,7 +172,7 @@ class Laser(SpaceObject):
             if d < self.radius + obj.radius:
                 obj.hit_by_laser(self)
                 break
-    
+
 
 def fill_background(image):
     # fill background with image of universe
@@ -186,29 +186,31 @@ def fill_background(image):
             x, y = i*w, j*h
             universe.append(pyglet.sprite.Sprite(img=bg_image, x=x, y=y, batch=batch, group=background))
     return universe
-   
-   
+
+
 def update(dt):
     for obj in space_object:
         w = window.width
         h = window.height
         obj.tick(dt, w, h)
-        
+
 
 def createNewShip():
     # reset game; create new ship in the middle of screen
     global lives, next_img
-    if lives == 1:
+    if lives == 0:
         gameOver = pyglet.text.Label('GAME OVER', font_size=48,
                           x=window.width//2, y=window.height//2,
                           anchor_x='center', anchor_y='center', batch=batch)
         pyglet.clock.unschedule(update)
         pyglet.clock.unschedule(deleteLaser)
+    last = livesImage.pop()
+    last.delete()
     lives -= 1
     img = pyglet.resource.image(shipWithShield_image)
     ship = Spaceship(window, img)
     space_object[:] = [ship] + space_object
-       
+
 
 def fireLaser(ship_x, ship_y, ship_speed, rotation, ship_radius):
     img = 'laserGreen02.png'
@@ -223,15 +225,15 @@ def fireLaser(ship_x, ship_y, ship_speed, rotation, ship_radius):
     laser = Laser(laser_img, x, y, x_speed, y_speed, rotation)
     space_object[:] = [laser] + space_object
     pyglet.clock.schedule_once(deleteLaser, laserLifetime, laser=laser)
-    
-   
+
+
 def deleteLaser(laserLifetime, laser):
     if laser in space_object:
         laser.delete()
 
 
 ### HERE BEGINS THE GAME ###
-    
+
 # Create a window
 window = pyglet.window.Window(fullscreen=True)
 
@@ -241,9 +243,9 @@ keys = key.KeyStateHandler()
 window.push_handlers(keys)
 
 pressed_keys = set()
-key_control = {key.UP:    'SPEED_UP', 
+key_control = {key.UP:    'SPEED_UP',
                key.DOWN:  'SLOW_DOWN',
-               key.RIGHT: 'RIGHT', 
+               key.RIGHT: 'RIGHT',
                key.LEFT:  'LEFT',
                key.SPACE: 'FIRE'}
 
@@ -268,42 +270,48 @@ meteors = [['meteorBrown_big1.png',
             'meteorBrown_big3.png',
             'meteorBrown_big4.png'],
            ['meteorBrown_med1.png'],
-           ['meteorBrown_small1.png'], 
+           ['meteorBrown_small1.png'],
            ['meteorBrown_tiny1.png']]
 min_size = len(meteors) - 1
 space_object = []
 for i in range(number_of_asteroids):
     img = random.choice(meteors[size])
     space_object.append(Asteroid(window, img, size))
-    
+
 # create Ship
-lives = 3
+lives = 3   # nb of players' lives
+life = 'playerLife1_blue.png'
+lifeImage = pyglet.resource.image(life)
+livesImage = []
+for L in range(lives + 1):
+    x, y = window.width/7. + L * lifeImage.width, window.height*6./7
+    livesImage.append(pyglet.sprite.Sprite(lifeImage, x, y, batch=batch))
 score = 0
 scoreLabel = pyglet.text.Label(text=str(score), font_size=40,
                           x=window.width*6./7, y=window.height*6./7,
                           anchor_x='center', anchor_y='center', batch=batch)
 
 shipWithShield_image = 'playerShip1_blue_shield.png'
-ship_image = 'playerShip1_blue.png'                        
+ship_image = 'playerShip1_blue.png'
 shieldLifetime = 3
 laserLifetime = 3
 createNewShip()
 
 pyglet.clock.schedule_interval(update, 1./60)
-    
+
 @window.event
 def on_draw():
     window.clear()
     batch.draw()
-    
+
 @window.event
 def on_key_press(symbol, modifiers):
     if symbol in key_control:
         pressed_keys.add(key_control[symbol])
-        
+
 @window.event
 def on_key_release(symbol, modifiers):
     if symbol in key_control:
         pressed_keys.discard(key_control[symbol])
-        
+
 pyglet.app.run()
